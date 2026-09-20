@@ -49,11 +49,11 @@ export default function TechnicalAudit() {
     },
     {
       id: 6,
-      title: 'Built-in BOOT Button (GPIO 9) Multi-Function Handler',
+      title: '100% Buttonless Architecture & Wireless Web Portal (Zero Buttons Required)',
       icon: Radio,
       status: 'solved',
-      blindCodeError: 'Leaving the user with no hardware interaction, requiring computer serial commands to switch between watch faces.',
-      ourSolution: 'The ESP32-C3 Super Mini has a tactile button on GPIO 9. We implement an asynchronous non-blocking debounced button handler: short click cycles the Big Watch Faces & dashboards, 3-second hold launches the captive AP configuration portal.',
+      blindCodeError: 'Requiring physical hardware buttons or cumbersome wiring to switch screens and enter configuration modes.',
+      ourSolution: 'No physical buttons needed whatsoever! The firmware operates completely wirelessly via an integrated SoftAP web portal, home WiFi REST API, and auto-rotation carousel. Switch watch faces, adjust PWM backlight brightness, and configure WiFi directly from any smartphone or browser.',
       severity: 'Usability'
     },
     {

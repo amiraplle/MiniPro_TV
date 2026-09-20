@@ -906,25 +906,14 @@ export default function DisplaySimulator({
             )}
           </div>
 
-          {/* Bottom Physical SuperMini BOOT Button Simulator */}
+          {/* 100% Buttonless Remote Control & Auto-Carousel Indicator */}
           {showBezel && (
-            <div className="mt-4 flex flex-col items-center">
-              <button
-                onMouseDown={handleButtonDown}
-                onMouseUp={handleButtonUp}
-                onTouchStart={handleButtonDown}
-                onTouchEnd={handleButtonUp}
-                className={`group flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-mono border transition-all ${
-                  isButtonPressed
-                    ? 'bg-amber-500 text-black border-amber-400 scale-95 shadow-[0_0_15px_rgba(245,158,11,0.6)]'
-                    : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-600 shadow-md'
-                }`}
-                title="Short click: Cycle Screen. Hold 3s: Trigger AP Web Setup"
-              >
-                <div className={`w-2 h-2 rounded-full ${isButtonPressed ? 'bg-black' : 'bg-amber-400'}`} />
-                <span>GPIO 9 (BOOT BTN)</span>
-              </button>
-              <span className="text-[10px] text-slate-500 mt-1">Click to cycle screen • Hold 3s for AP setup</span>
+            <div className="mt-3 flex flex-col items-center">
+              <div className="flex items-center gap-2 px-3 py-1 rounded-full text-[11px] font-mono border bg-emerald-950/60 border-emerald-500/40 text-emerald-300">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span>100% Buttonless • Controlled via WiFi Web Portal</span>
+              </div>
+              <span className="text-[10px] text-slate-500 mt-1">Zero buttons or wiring needed • Auto-rotate carousel or web switcher</span>
             </div>
           )}
         </div>

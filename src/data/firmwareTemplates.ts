@@ -159,8 +159,7 @@ WebServer server(80);
 const char* AP_SSID = "C3-Display-Setup";
 const char* AP_PASS = "12345678";
 
-#define PIN_BOOT_BTN ${config.pinBootBtn}
-
+// 100% Buttonless Architecture: Controlled completely via Web Portal, REST API, or Carousel
 enum ScreenMode {
   SCREEN_BIG_BOLD_ULTRA = 0,     // Modern Apple Watch Ultra Style (Giant numerals + Activity Ring)
   SCREEN_BIG_TYPOGRAPHY_DUO = 1, // Modern Stacked Oversized Typography (Nothing/Braun aesthetic)
@@ -176,7 +175,7 @@ ScreenMode currentScreen = SCREEN_BIG_BOLD_ULTRA;
 unsigned long lastScreenSwitch = 0;
 unsigned long lastWeatherUpdate = 0;
 bool autoRotate = ${config.autoRotateScreens ? 'true' : 'false'};
-const unsigned long ROTATE_INTERVAL = ${config.rotateIntervalSec * 1000};
+unsigned long rotateInterval = ${config.rotateIntervalSec * 1000};
 
 // Live telemetry state cache
 struct DeviceState {
@@ -204,7 +203,6 @@ void drawHomeScreen();
 void drawPcStatsScreen();
 void updateWeather();
 void setupWebServer();
-void handleButton();
 
 // -------------------------------------------------------------
 // Setup
@@ -215,9 +213,8 @@ void setup() {
   delay(500);
   Serial.println("\\n=======================================================");
   Serial.println("  ESP32-C3 Super Mini + ST7789 (GMT130 V1.0) Firmware  ");
+  Serial.println("  100% BUTTONLESS - Wireless Web Portal & REST API     ");
   Serial.println("=======================================================");
-
-  pinMode(PIN_BOOT_BTN, INPUT_PULLUP);
 
   // 1. Initialize Display & DMA Canvas
   tft.init();
@@ -288,10 +285,9 @@ void setup() {
 // -------------------------------------------------------------
 void loop() {
   server.handleClient();
-  handleButton();
 
-  // Screen Auto Rotation
-  if (autoRotate && (millis() - lastScreenSwitch > ROTATE_INTERVAL)) {
+  // Screen Auto Rotation Carousel (if enabled via Web UI / API)
+  if (autoRotate && (millis() - lastScreenSwitch > rotateInterval)) {
     lastScreenSwitch = millis();
     currentScreen = (ScreenMode)((currentScreen + 1) % SCREEN_COUNT);
   }
@@ -707,35 +703,6 @@ void drawPcStatsScreen() {
 }
 
 // -------------------------------------------------------------
-// Button Handling (Built-in BOOT Button on GPIO 9)
-// -------------------------------------------------------------
-void handleButton() {
-  static unsigned long btnPressTime = 0;
-  static bool btnWasPressed = false;
-
-  bool isPressed = (digitalRead(PIN_BOOT_BTN) == LOW);
-
-  if (isPressed && !btnWasPressed) {
-    btnPressTime = millis();
-    btnWasPressed = true;
-  } else if (!isPressed && btnWasPressed) {
-    unsigned long duration = millis() - btnPressTime;
-    btnWasPressed = false;
-
-    if (duration > 3000) {
-      Serial.println("Long press detected! Starting AP Setup Mode...");
-      WiFi.disconnect(true);
-      WiFi.mode(WIFI_AP);
-      WiFi.softAP(AP_SSID, AP_PASS);
-      tft.setBrightness(255);
-    } else if (duration > 50) {
-      currentScreen = (ScreenMode)((currentScreen + 1) % SCREEN_COUNT);
-      Serial.printf("Screen manually switched to: %d\\n", currentScreen);
-    }
-  }
-}
-
-// -------------------------------------------------------------
 // OpenWeatherMap JSON API
 // -------------------------------------------------------------
 void updateWeather() {
@@ -766,17 +733,20 @@ void updateWeather() {
 }
 
 // -------------------------------------------------------------
-// Web Server & GeekMagic Compatible REST API
+// Web Server & REST API (100% Buttonless Remote Control)
 // -------------------------------------------------------------
 void setupWebServer() {
   server.on("/api/display", HTTP_GET, []() {
     JsonDocument doc;
     doc["screen"] = (int)currentScreen;
     doc["brightness"] = state.brightness;
+    doc["auto_rotate"] = autoRotate;
+    doc["rotate_interval"] = rotateInterval;
     doc["temp"] = state.temperature;
     doc["humidity"] = state.humidity;
     doc["wifi"] = (WiFi.status() == WL_CONNECTED);
     doc["ip"] = WiFi.localIP().toString();
+    doc["ap_ip"] = WiFi.softAPIP().toString();
     String resp;
     serializeJson(doc, resp);
     server.send(200, "application/json", resp);
@@ -785,7 +755,7 @@ void setupWebServer() {
   server.on("/api/brightness", HTTP_GET, []() {
     if (server.hasArg("value")) {
       int val = server.arg("value").toInt();
-      state.brightness = constrain(val, 0, 255);
+      state.brightness = constrain(val, 5, 255);
       tft.setBrightness(state.brightness);
       server.send(200, "text/plain", "OK");
     } else {
@@ -796,23 +766,64 @@ void setupWebServer() {
   server.on("/api/screen", HTTP_GET, []() {
     if (server.hasArg("id")) {
       currentScreen = (ScreenMode)constrain(server.arg("id").toInt(), 0, SCREEN_COUNT - 1);
+      autoRotate = false; // Freeze on selected screen when manually picked
       server.send(200, "text/plain", "OK");
     } else {
       server.send(400, "text/plain", "Missing id");
     }
   });
 
+  server.on("/api/autorotate", HTTP_GET, []() {
+    if (server.hasArg("enabled")) {
+      autoRotate = (server.arg("enabled").toInt() == 1);
+    }
+    if (server.hasArg("interval")) {
+      rotateInterval = max(2000, server.arg("interval").toInt());
+    }
+    server.send(200, "text/plain", "OK");
+  });
+
+  server.on("/api/wifi", HTTP_GET, []() {
+    if (server.hasArg("ssid") && server.hasArg("pass")) {
+      String ssid = server.arg("ssid");
+      String pass = server.arg("pass");
+      WiFi.begin(ssid.c_str(), pass.c_str());
+      server.send(200, "text/plain", "Connecting to WiFi...");
+    } else {
+      server.send(400, "text/plain", "Missing ssid or pass");
+    }
+  });
+
   server.on("/", HTTP_GET, []() {
-    String html = "<html><head><meta name='viewport' content='width=device-width,initial-scale=1'>";
-    html += "<title>C3 SuperMini Display</title><style>body{font-family:sans-serif;background:#121212;color:#eee;padding:20px}button{background:#00C853;color:#fff;border:none;padding:12px 20px;border-radius:6px;font-size:16px;cursor:pointer;margin:4px}input{padding:10px;border-radius:4px;border:1px solid #444;background:#222;color:#fff;width:100%;margin-bottom:12px}</style></head>";
-    html += "<body><h2>ESP32-C3 Watch Faces & Settings</h2>";
-    html += "<p>ST7789 GMT130 V1.0 (240x240)</p>";
-    html += "<p><button onclick=\\"fetch('/api/screen?id=0')\\">Big Bold Ultra</button> ";
-    html += "<button onclick=\\"fetch('/api/screen?id=1')\\">Big Typography Duo</button> ";
-    html += "<button onclick=\\"fetch('/api/screen?id=2')\\">Big Sport Digital</button> ";
-    html += "<button onclick=\\"fetch('/api/screen?id=3')\\">Clock Dashboard</button> ";
-    html += "<button onclick=\\"fetch('/api/screen?id=4')\\">Weather Station</button></p>";
-    html += "<p>Brightness: <input type='range' min='10' max='255' value='" + String(state.brightness) + "' onchange=\\"fetch('/api/brightness?value='+this.value)\\">";
+    String html = "<!DOCTYPE html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>";
+    html += "<title>C3 SuperMini Watch Dashboard</title><style>";
+    html += "body{font-family:system-ui,-apple-system,sans-serif;background:#0d1117;color:#c9d1d9;padding:16px;margin:0 auto;max-width:540px}";
+    html += "h1{font-size:20px;color:#58a6ff;margin-bottom:4px}p{color:#8b949e;font-size:14px;margin-top:0}";
+    html += ".card{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:14px;margin-bottom:14px}";
+    html += ".grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}";
+    html += "button{background:#21262d;color:#c9d1d9;border:1px solid #30363d;padding:12px 10px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s}";
+    html += "button:hover{background:#30363d;color:#fff}button.active{background:#238636;color:#fff;border-color:#2ea043}";
+    html += "button.btn-accent{background:#1f6feb;color:#fff;border-color:#388bfd}";
+    html += "input[type='range']{width:100%;accent-color:#238636;margin-top:8px}";
+    html += "input[type='text'],input[type='password']{width:100%;box-sizing:border-box;background:#0d1117;border:1px solid #30363d;color:#fff;padding:10px;border-radius:6px;margin-bottom:8px}";
+    html += "</style></head><body>";
+    html += "<h1>ESP32-C3 SuperMini Display</h1>";
+    html += "<p>ST7789 240x240 (GMT130 V1.0) &bull; 100% Buttonless Remote Control</p>";
+    html += "<div class='card'><b>Select Watch Face</b><div class='grid' style='margin-top:10px'>";
+    html += "<button onclick=\\"fetch('/api/screen?id=0')\\">1. Big Bold Ultra</button>";
+    html += "<button onclick=\\"fetch('/api/screen?id=1')\\">2. Typography Duo</button>";
+    html += "<button onclick=\\"fetch('/api/screen?id=2')\\">3. Sport Digital</button>";
+    html += "<button onclick=\\"fetch('/api/screen?id=3')\\">4. Clock Dashboard</button>";
+    html += "<button onclick=\\"fetch('/api/screen?id=4')\\">5. Weather Station</button>";
+    html += "<button onclick=\\"fetch('/api/screen?id=5')\\">6. Home Assistant</button>";
+    html += "<button onclick=\\"fetch('/api/screen?id=6')\\\" style='grid-column: span 2'>7. PC Hardware Stats</button>";
+    html += "</div></div>";
+    html += "<div class='card'><b>Auto-Rotation Carousel</b><p>Automatically cycles through all screens without physical buttons</p>";
+    html += "<button id='btnAuto' class='btn-accent' onclick=\\"fetch('/api/display').then(r=>r.json()).then(d=>{const next=d.auto_rotate?0:1;fetch('/api/autorotate?enabled='+next).then(()=>alert('Auto-rotate: '+(next?'ON':'OFF')));});\\">Toggle Auto-Rotate</button>";
+    html += "</div>";
+    html += "<div class='card'><b>Backlight Brightness</b>";
+    html += "<input type='range' min='5' max='255' value='" + String(state.brightness) + "' onchange=\\"fetch('/api/brightness?value='+this.value)\\">";
+    html += "</div>";
     html += "</body></html>";
     server.send(200, "text/html", html);
   });
