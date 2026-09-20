@@ -145,6 +145,7 @@ export function generateArduinoIno(config: FirmwareConfig): string {
 #include <Arduino.h>
 #include <WiFi.h>
 #include <WebServer.h>
+#include <DNSServer.h>
 #include <time.h>
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
@@ -157,6 +158,7 @@ LGFX_ST7789_GMT130 tft;
 LGFX_Sprite canvas(&tft); // DMA full 240x240 off-screen canvas (zero tearing!)
 
 WebServer server(80);
+DNSServer dnsServer;
 
 const char* AP_SSID = "C3-Display-Setup";
 const char* AP_PASS = "12345678";
@@ -245,9 +247,19 @@ void setup() {
   canvas.pushSprite(0, 0);
 
   // 2. WiFi Connectivity
+  WiFi.persistent(false);
+  WiFi.disconnect(true);
+  delay(100);
+
+  IPAddress apIP(192, 168, 4, 1);
+  IPAddress netMsk(255, 255, 255, 0);
+
   ${config.wifiMode === 'hardcoded' ? `
   Serial.println("Connecting to WiFi: ${config.wifiSsid}...");
-  WiFi.mode(WIFI_STA);
+  WiFi.mode(WIFI_AP_STA);
+  WiFi.softAPConfig(apIP, apIP, netMsk);
+  WiFi.softAP(AP_SSID, AP_PASS, 1, 0, 4);
+  WiFi.setTxPower(WIFI_POWER_19_5dBm);
   WiFi.begin("${config.wifiSsid}", "${config.wifiPass}");
   
   int attempts = 0;
@@ -260,18 +272,20 @@ void setup() {
   if (WiFi.status() == WL_CONNECTED) {
     Serial.println("\\n[OK] WiFi Connected. IP: " + WiFi.localIP().toString());
   } else {
-    Serial.println("\\n[WARN] WiFi connection failed. Launching SoftAP...");
-    WiFi.mode(WIFI_AP_STA);
-    WiFi.softAP(AP_SSID, AP_PASS);
-    Serial.println("AP IP: " + WiFi.softAPIP().toString());
+    Serial.println("\\n[WARN] WiFi connection failed. SoftAP ready at 192.168.4.1");
   }
   ` : `
   Serial.println("Starting in Captive Portal Setup Mode...");
   WiFi.mode(WIFI_AP_STA);
-  WiFi.softAP(AP_SSID, AP_PASS);
+  WiFi.softAPConfig(apIP, apIP, netMsk);
+  WiFi.softAP(AP_SSID, AP_PASS, 1, 0, 4);
+  WiFi.setTxPower(WIFI_POWER_19_5dBm);
   Serial.println("Connect to WiFi SSID: " + String(AP_SSID) + " (Pass: " + String(AP_PASS) + ")");
-  Serial.println("Web Setup at: http://" + WiFi.softAPIP().toString());
+  Serial.println("Web Setup at: http://192.168.4.1");
   `}
+
+  dnsServer.setErrorReplyCode(DNSReplyCode::NoError);
+  dnsServer.start(53, "*", apIP);
 
   // 3. NTP Clock Initialization
   configTime(${config.timezoneOffsetHours * 3600}, 0, "${config.ntpServer}", "time.google.com");
@@ -286,6 +300,7 @@ void setup() {
 // Main Loop
 // -------------------------------------------------------------
 void loop() {
+  dnsServer.processNextRequest();
   server.handleClient();
 
   // Screen Auto Rotation Carousel (if enabled via Web UI / API)

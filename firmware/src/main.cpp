@@ -21,6 +21,7 @@
 #include <Arduino.h>
 #include <WiFi.h>
 #include <WebServer.h>
+#include <DNSServer.h>
 #include <time.h>
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
@@ -33,6 +34,7 @@ LGFX_ST7789_GMT130 tft;
 LGFX_Sprite canvas(&tft); // DMA full 240x240 off-screen canvas (zero tearing!)
 
 WebServer server(80);
+DNSServer dnsServer;
 
 const char* AP_SSID = "C3-Display-Setup";
 const char* AP_PASS = "12345678";
@@ -116,10 +118,35 @@ void setup() {
   canvas.drawString("GMT130 V1.0 Ready", 120, 155);
   canvas.pushSprite(0, 0);
 
-  // 2. Wireless Connectivity (Always-on Access Point + Station Mode)
+  // 2. Wireless Connectivity (Robust Access Point + Station Mode)
   Serial.println("Starting Wireless Access Point Portal...");
+  WiFi.persistent(false); // Do not write flash wear on every boot
+  WiFi.disconnect(true);
+  delay(100);
+
   WiFi.mode(WIFI_AP_STA);
-  WiFi.softAP(AP_SSID, AP_PASS);
+  // IP 192.168.4.1, Gateway 192.168.4.1, Subnet 255.255.255.0
+  IPAddress apIP(192, 168, 4, 1);
+  IPAddress netMsk(255, 255, 255, 0);
+  WiFi.softAPConfig(apIP, apIP, netMsk);
+  // Channel 1, visible SSID, max 4 connections
+  bool apSuccess = WiFi.softAP(AP_SSID, AP_PASS, 1, 0, 4);
+  delay(200);
+
+  // Set maximum Wi-Fi TX power (80 = 20 dBm) for strong signal
+  WiFi.setTxPower(WIFI_POWER_19_5dBm);
+
+  if (apSuccess) {
+    Serial.println("[OK] Access Point active!");
+  } else {
+    Serial.println("[WARN] softAP initial start failed, retrying open mode...");
+    WiFi.softAP(AP_SSID);
+  }
+
+  // DNS Server redirects all DNS requests to 192.168.4.1 for instant captive portal
+  dnsServer.setErrorReplyCode(DNSReplyCode::NoError);
+  dnsServer.start(53, "*", apIP);
+
   Serial.println("Connect to WiFi SSID: " + String(AP_SSID) + " (Pass: " + String(AP_PASS) + ")");
   Serial.println("Web Control Panel at: http://" + WiFi.softAPIP().toString());
 
@@ -136,6 +163,7 @@ void setup() {
 // Main Loop
 // -------------------------------------------------------------
 void loop() {
+  dnsServer.processNextRequest();
   server.handleClient();
 
   // Screen Auto-Rotation Carousel (if enabled via Web UI / API)
