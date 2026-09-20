@@ -4,11 +4,11 @@ export default function TechnicalAudit() {
   const auditPoints = [
     {
       id: 1,
-      title: 'Pin 7 Is BLK (Backlight), NOT CS! (Module PCB Substrate Trap)',
+      title: 'Pin 7 Is BLK (Backlight), NOT CS! + SPI Mode 3 Latching',
       icon: Zap,
       status: 'solved',
-      blindCodeError: 'Generic ST7789 code blindly sets CS=Pin 7 or toggles CS during SPI transfers. Because CS on GMT130 V1.0 is hardwired to GND on the back of the LCD PCB, treating Pin 7 as CS toggles the backlight on and off with SPI clock pulses and freezes the bus!',
-      ourSolution: 'We explicitly configure pin_cs = -1 in LovyanGFX and TFT_eSPI, and route Pin 7 (BLK) to GPIO 3 with LEDC hardware PWM for flicker-free 1.2 kHz brightness dimming.',
+      blindCodeError: 'Generic ST7789 code blindly sets CS=Pin 7 or runs SPI Mode 0 with CS disabled. Because CS is hardwired to GND on the module PCB, the display never sees a CS falling edge to reset its SPI state machine, and treating Pin 7 as CS toggles the backlight with SPI pulses!',
+      ourSolution: 'We set pin_cs = -1 and configure SPI Mode 3 (CPOL=1, CPHA=1) at 20MHz write clock. Mode 3 latches data reliably on the rising edge without needing a toggling CS line, and Pin 7 (BLK) is wired to GPIO 3 for smooth PWM brightness dimming.',
       severity: 'Critical Hardware'
     },
     {

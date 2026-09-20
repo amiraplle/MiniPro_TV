@@ -26,12 +26,14 @@ public:
       auto cfg = _bus_instance.config();
 
       cfg.spi_host   = SPI2_HOST;     // ESP32-C3 FSPI
-      cfg.spi_mode   = 0;             // SPI Mode 0 (CPOL=0, CPHA=0)
-      cfg.freq_write = 40000000;      // 40MHz stable write clock (up to 80MHz supported)
+      // CRITICAL: Modules without CS (pin_cs = -1) require SPI Mode 3 for reliable
+      // CPOL=1/CPHA=1 clock latching when CS is permanently tied to ground.
+      cfg.spi_mode   = 3;             // SPI Mode 3
+      cfg.freq_write = 20000000;      // 20MHz rock-solid write clock (eliminates jumper wire attenuation)
       cfg.freq_read  = 16000000;      // 16MHz read clock
-      cfg.spi_3wire   = true;          // GMT130 is write-only / 3-wire (no MISO)
-      cfg.use_lock    = true;
-      cfg.dma_channel = SPI_DMA_CH_AUTO; // Enable hardware DMA channel (essential for anti-tearing)
+      cfg.spi_3wire  = false;         // Standard 4-wire style with dedicated D/C pin
+      cfg.use_lock   = true;
+      cfg.dma_channel = SPI_DMA_CH_AUTO; // Enable hardware DMA channel
       
       cfg.pin_sclk = 4;               // GMT130 SCL / CLK (GPIO 4)
       cfg.pin_mosi = 6;               // GMT130 SDA / DIN (GPIO 6)
@@ -45,14 +47,14 @@ public:
     { // Configure ST7789 240x240 Panel
       auto cfg = _panel_instance.config();
 
-      cfg.pin_cs           = -1;      // CRITICAL: GMT130 has NO CS pin (grounded on PCB)!
+      cfg.pin_cs           = -1;      // GMT130 CS is hardwired to GND on PCB
       cfg.pin_rst          = 1;       // GMT130 RES (Reset - GPIO 1)
       cfg.pin_busy         = -1;
 
       cfg.panel_width      = 240;
       cfg.panel_height     = 240;
       cfg.memory_width     = 240;
-      cfg.memory_height    = 320;     // ST7789 internal controller RAM is 320 lines
+      cfg.memory_height    = 240;     // Standard 240x240 address space
       cfg.offset_x         = 0;
       cfg.offset_y         = 0;
       cfg.offset_rotation  = 0;
@@ -60,7 +62,7 @@ public:
       cfg.dummy_read_pixel = 8;
       cfg.dummy_read_bits  = 1;
       cfg.readable         = false;
-      cfg.invert           = true;    // CRITICAL: ST7789 IPS requires 0x21 INVON
+      cfg.invert           = true;    // ST7789 IPS requires 0x21 INVON
       cfg.rgb_order        = false;   // RGB order
       cfg.dlen_16bit       = false;
       cfg.bus_shared       = false;

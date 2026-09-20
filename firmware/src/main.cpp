@@ -681,4 +681,27 @@ void setupWebServer() {
     html += "</script></body></html>";
     server.send(200, "text/html", html);
   });
+
+  // Captive Portal probes & 404 Fallback redirect
+  // Prevents [E][WebServer.cpp:638] _handleRequest(): request handler not found
+  server.on("/generate_204", HTTP_GET, []() {
+    server.sendHeader("Location", "http://192.168.4.1/", true);
+    server.send(302, "text/plain", "");
+  });
+  server.on("/hotspot-detect.html", HTTP_GET, []() {
+    server.sendHeader("Location", "http://192.168.4.1/", true);
+    server.send(302, "text/plain", "");
+  });
+  server.on("/canonical.html", HTTP_GET, []() {
+    server.sendHeader("Location", "http://192.168.4.1/", true);
+    server.send(302, "text/plain", "");
+  });
+  server.on("/connecttest.txt", HTTP_GET, []() {
+    server.send(200, "text/plain", "Microsoft Connect Test");
+  });
+  server.onNotFound([]() {
+    // If device hits any unknown path (iOS/Android/Windows captive probes), redirect to Web UI root
+    server.sendHeader("Location", "http://192.168.4.1/", true);
+    server.send(302, "text/plain", "");
+  });
 }

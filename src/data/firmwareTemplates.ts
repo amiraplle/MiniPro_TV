@@ -59,11 +59,13 @@ public:
       auto cfg = _bus_instance.config();
 
       cfg.spi_host   = SPI2_HOST;     // ESP32-C3 FSPI
-      cfg.spi_mode   = 0;             // SPI Mode 0 (CPOL=0, CPHA=0)
-      cfg.freq_write = ${config.spiFrequencyMhz * 1000000}; // ${config.spiFrequencyMhz}MHz stable write clock
+      // CRITICAL: Modules without CS (pin_cs = -1) require SPI Mode 3 for reliable
+      // CPOL=1/CPHA=1 clock latching when CS is permanently tied to ground.
+      cfg.spi_mode   = 3;             // SPI Mode 3
+      cfg.freq_write = 20000000;      // 20MHz rock-solid write clock (eliminates jumper wire attenuation)
       cfg.freq_read  = 16000000;      // 16MHz read clock
-      cfg.spi_3wire   = true;          // GMT130 is write-only / 3-wire (no MISO)
-      cfg.use_lock    = true;
+      cfg.spi_3wire  = false;         // Standard 4-wire style with dedicated D/C pin
+      cfg.use_lock   = true;
       cfg.dma_channel = SPI_DMA_CH_AUTO; // Enable hardware DMA channel (essential for 60fps anti-tearing)
       
       cfg.pin_sclk = ${config.pinScl}; // GMT130 SCL / CLK
@@ -85,7 +87,7 @@ public:
       cfg.panel_width      = 240;
       cfg.panel_height     = 240;
       cfg.memory_width     = 240;
-      cfg.memory_height    = 320;     // ST7789 internal controller RAM is 320 lines
+      cfg.memory_height    = 240;     // Standard 240x240 address space
       cfg.offset_x         = 0;
       cfg.offset_y         = 0;       // 0 offset in standard orientation (adjusted on rotation)
       cfg.offset_rotation  = 0;
@@ -827,6 +829,15 @@ void setupWebServer() {
     html += "</div>";
     html += "</body></html>";
     server.send(200, "text/html", html);
+  });
+
+  server.on("/generate_204", HTTP_GET, []() {
+    server.sendHeader("Location", "http://192.168.4.1/", true);
+    server.send(302, "text/plain", "");
+  });
+  server.onNotFound([]() {
+    server.sendHeader("Location", "http://192.168.4.1/", true);
+    server.send(302, "text/plain", "");
   });
 }
 `;
