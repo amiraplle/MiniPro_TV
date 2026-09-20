@@ -778,7 +778,8 @@ void setupWebServer() {
       autoRotate = (server.arg("enabled").toInt() == 1);
     }
     if (server.hasArg("interval")) {
-      rotateInterval = max(2000, server.arg("interval").toInt());
+      long val = server.arg("interval").toInt();
+      rotateInterval = (val > 2000L) ? val : 2000L;
     }
     server.send(200, "text/plain", "OK");
   });
