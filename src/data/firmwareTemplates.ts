@@ -235,11 +235,13 @@ void setup() {
   canvas.fillScreen(0x0821);
   canvas.setTextColor(TFT_WHITE);
   canvas.setTextDatum(MC_DATUM);
-  canvas.drawString("ESP32-C3", 120, 85, 4);
+  canvas.setFont(&fonts::Font4);
+  canvas.drawString("ESP32-C3", 120, 85);
   canvas.setTextColor(0x07E0); // Emerald Green
-  canvas.drawString("ST7789 240x240", 120, 120, 4);
+  canvas.drawString("ST7789 240x240", 120, 120);
   canvas.setTextColor(0x7BEF);
-  canvas.drawString("GMT130 V1.0 Ready", 120, 155, 2);
+  canvas.setFont(&fonts::Font2);
+  canvas.drawString("GMT130 V1.0 Ready", 120, 155);
   canvas.pushSprite(0, 0);
 
   // 2. WiFi Connectivity
@@ -357,44 +359,51 @@ void drawBigBoldUltra() {
 
   // Outer Smooth Seconds Arc (114px radius, 5px stroke)
   float angle = (sec / 60.0f) * 360.0f;
-  canvas.drawArc(120, 120, 114, 110, 0, 360, 0x18E3); // Background track
-  canvas.drawArc(120, 120, 114, 110, 270, (270 + (int)angle) % 360, 0xFD20); // Radiant Sunset Orange
+  canvas.fillArc(120, 120, 110, 114, 0, 360, 0x18E3); // Background track
+  canvas.fillArc(120, 120, 110, 114, 270, (270 + (int)angle) % 360, 0xFD20); // Radiant Sunset Orange
 
   // Top Date Capsule
   canvas.fillRoundRect(50, 24, 140, 26, 13, 0x18E3);
   canvas.setTextDatum(MC_DATUM);
   canvas.setTextColor(0xFD20);
-  canvas.drawString(dateStr, 120, 37, 2);
+  canvas.setFont(&fonts::Font2);
+  canvas.drawString(dateStr, 120, 37);
 
   // GIANT HIGH-CONTRAST TIME DISPLAY
   // Hour in Vibrant Orange / Minute in Crisp Pure White
   canvas.setTextDatum(MR_DATUM);
   canvas.setTextColor(0xFD20); // Electric Orange
-  canvas.drawString(hourStr, 106, 114, 7); // Giant Font 7
+  canvas.setFont(&fonts::Font7); // Giant Font 7
+  canvas.drawString(hourStr, 106, 114);
 
   canvas.setTextDatum(MC_DATUM);
   canvas.setTextColor(TFT_WHITE);
-  canvas.drawString(":", 118, 108, 6);
+  canvas.setFont(&fonts::Font6);
+  canvas.drawString(":", 118, 108);
 
   canvas.setTextDatum(ML_DATUM);
   canvas.setTextColor(TFT_WHITE); // Pure White
-  canvas.drawString(minStr, 130, 114, 7);
+  canvas.setFont(&fonts::Font7);
+  canvas.drawString(minStr, 130, 114);
 
   // Seconds Badge on Right
   canvas.fillRoundRect(186, 100, 36, 26, 8, 0x2104);
   canvas.setTextDatum(MC_DATUM);
   canvas.setTextColor(0xFD20);
-  canvas.drawString(secStr, 204, 113, 4);
+  canvas.setFont(&fonts::Font4);
+  canvas.drawString(secStr, 204, 113);
 
   // Bottom Status Metrics (Temperature + Battery / WiFi)
   canvas.fillRoundRect(30, 172, 180, 42, 21, 0x10A2);
   canvas.setTextDatum(ML_DATUM);
   canvas.setTextColor(0x07E0); // Bright Green
-  canvas.drawString(String(state.temperature, 1) + " C", 48, 193, 4);
+  canvas.setFont(&fonts::Font4);
+  canvas.drawString(String(state.temperature, 1) + " C", 48, 193);
 
   canvas.setTextDatum(MR_DATUM);
   canvas.setTextColor(0x07FF); // Cyan
-  canvas.drawString(WiFi.status() == WL_CONNECTED ? "ONLINE" : "OFFLINE", 192, 193, 2);
+  canvas.setFont(&fonts::Font2);
+  canvas.drawString(WiFi.status() == WL_CONNECTED ? "ONLINE" : "OFFLINE", 192, 193);
 }
 
 // -------------------------------------------------------------------------
@@ -426,28 +435,32 @@ void drawBigTypographyDuo() {
   // Hour (Top, 80px visual scale)
   canvas.setTextDatum(TL_DATUM);
   canvas.setTextColor(0x07FF); // Vivid Neon Cyan
-  canvas.drawString(hourStr, 34, 24, 8); // Largest vector font 8
+  canvas.setFont(&fonts::Font8); // Largest vector font 8
+  canvas.drawString(hourStr, 34, 24);
 
   // Minute (Bottom, 80px visual scale)
   canvas.setTextColor(TFT_WHITE);
-  canvas.drawString(minStr, 34, 114, 8);
+  canvas.drawString(minStr, 34, 114);
 
   // Right Corner Micro-Metrics
   // Top-right Date Box
   canvas.fillRoundRect(152, 28, 72, 34, 8, 0x18C3);
   canvas.setTextDatum(MC_DATUM);
   canvas.setTextColor(0xFBE0);
-  canvas.drawString(dateStr, 188, 45, 2);
+  canvas.setFont(&fonts::Font2);
+  canvas.drawString(dateStr, 188, 45);
 
   // Mid-right Temp Box
   canvas.fillRoundRect(152, 70, 72, 34, 8, 0x18C3);
   canvas.setTextColor(0x07E0);
-  canvas.drawString(String(state.temperature, 0) + " C", 188, 87, 4);
+  canvas.setFont(&fonts::Font4);
+  canvas.drawString(String(state.temperature, 0) + " C", 188, 87);
 
   // Bot-right WiFi / Activity Indicator
   canvas.fillRoundRect(152, 112, 72, 34, 8, 0x18C3);
   canvas.setTextColor(0xFFE0);
-  canvas.drawString("WIFI", 188, 129, 2);
+  canvas.setFont(&fonts::Font2);
+  canvas.drawString("WIFI", 188, 129);
 }
 
 // -------------------------------------------------------------------------
@@ -471,6 +484,7 @@ void drawBigSportDigital() {
   // Top Days-of-Week Strip [S M T W T F S]
   int dayIdx = timeValid ? timeinfo.tm_wday : 0;
   const char* days[] = {"S", "M", "T", "W", "T", "F", "S"};
+  canvas.setFont(&fonts::Font2);
   for (int i = 0; i < 7; i++) {
     int x = 24 + i * 28;
     if (i == dayIdx) {
@@ -480,48 +494,59 @@ void drawBigSportDigital() {
       canvas.setTextColor(0x7BEF);
     }
     canvas.setTextDatum(MC_DATUM);
-    canvas.drawString(days[i], x + 8, 25, 2);
+    canvas.drawString(days[i], x + 8, 25);
   }
 
   // Center Big Digital Time Block
   canvas.fillRoundRect(16, 46, 208, 90, 14, 0x0862);
   canvas.setTextDatum(ML_DATUM);
   canvas.setTextColor(0x07E0); // Vivid LCD Green
-  canvas.drawString(timeStr, 28, 91, 7); // Giant Font 7
+  canvas.setFont(&fonts::Font7); // Giant Font 7
+  canvas.drawString(timeStr, 28, 91);
 
   // Boxed Seconds
   canvas.fillRoundRect(168, 58, 44, 32, 6, 0x18C3);
   canvas.setTextDatum(MC_DATUM);
   canvas.setTextColor(0xFD20);
-  canvas.drawString(secStr, 190, 74, 4);
+  canvas.setFont(&fonts::Font4);
+  canvas.drawString(secStr, 190, 74);
 
   // Bottom 3-Card Dashboard
   // Card 1: Temp
   canvas.fillRoundRect(16, 148, 64, 74, 10, 0x10A2);
   canvas.setTextColor(0x7BEF);
-  canvas.drawString("TEMP", 48, 162, 1);
+  canvas.setFont(&fonts::Font0);
+  canvas.drawString("TEMP", 48, 162);
   canvas.setTextColor(TFT_WHITE);
-  canvas.drawString(String(state.temperature, 0), 48, 186, 4);
+  canvas.setFont(&fonts::Font4);
+  canvas.drawString(String(state.temperature, 0), 48, 186);
   canvas.setTextColor(0x07E0);
-  canvas.drawString("C", 48, 206, 1);
+  canvas.setFont(&fonts::Font0);
+  canvas.drawString("C", 48, 206);
 
   // Card 2: Humidity
   canvas.fillRoundRect(88, 148, 64, 74, 10, 0x10A2);
   canvas.setTextColor(0x7BEF);
-  canvas.drawString("HUM", 120, 162, 1);
+  canvas.setFont(&fonts::Font0);
+  canvas.drawString("HUM", 120, 162);
   canvas.setTextColor(TFT_WHITE);
-  canvas.drawString(String((int)state.humidity), 120, 186, 4);
+  canvas.setFont(&fonts::Font4);
+  canvas.drawString(String((int)state.humidity), 120, 186);
   canvas.setTextColor(0x07FF);
-  canvas.drawString("%", 120, 206, 1);
+  canvas.setFont(&fonts::Font0);
+  canvas.drawString("%", 120, 206);
 
   // Card 3: Power / Status
   canvas.fillRoundRect(160, 148, 64, 74, 10, 0x10A2);
   canvas.setTextColor(0x7BEF);
-  canvas.drawString("POWER", 192, 162, 1);
+  canvas.setFont(&fonts::Font0);
+  canvas.drawString("POWER", 192, 162);
   canvas.setTextColor(TFT_WHITE);
-  canvas.drawString(String((int)state.haPower), 192, 186, 2);
+  canvas.setFont(&fonts::Font2);
+  canvas.drawString(String((int)state.haPower), 192, 186);
   canvas.setTextColor(0xFBE0);
-  canvas.drawString("W", 192, 206, 1);
+  canvas.setFont(&fonts::Font0);
+  canvas.drawString("W", 192, 206);
 }
 
 // -------------------------------------------------------------
@@ -546,27 +571,32 @@ void drawClockDashboard() {
 
   // Smooth Second Outer Arc Gauge
   float angle = (secValue / 60.0f) * 360.0f;
-  canvas.drawArc(120, 120, 114, 110, 0, 360, 0x18E3);
-  canvas.drawArc(120, 120, 114, 110, 270, (270 + (int)angle) % 360, 0x07E0);
+  canvas.fillArc(120, 120, 110, 114, 0, 360, 0x18E3);
+  canvas.fillArc(120, 120, 110, 114, 270, (270 + (int)angle) % 360, 0x07E0);
 
   canvas.setTextDatum(MC_DATUM);
   canvas.setTextColor(0x7BEF);
-  canvas.drawString(dateStr, 120, 48, 2);
+  canvas.setFont(&fonts::Font2);
+  canvas.drawString(dateStr, 120, 48);
 
   canvas.setTextColor(TFT_WHITE);
-  canvas.drawString(timeStr, 110, 110, 7);
+  canvas.setFont(&fonts::Font7);
+  canvas.drawString(timeStr, 110, 110);
 
   canvas.setTextColor(0x07E0);
-  canvas.drawString(secStr, 186, 122, 4);
+  canvas.setFont(&fonts::Font4);
+  canvas.drawString(secStr, 186, 122);
 
   canvas.fillRoundRect(35, 172, 170, 36, 18, 0x18C3);
   canvas.setTextColor(0xFFE0);
   canvas.setTextDatum(ML_DATUM);
-  canvas.drawString(String(state.temperature, 1) + " C", 52, 190, 2);
+  canvas.setFont(&fonts::Font2);
+  canvas.drawString(String(state.temperature, 1) + " C", 52, 190);
 
   canvas.setTextColor(WiFi.status() == WL_CONNECTED ? 0x07E0 : 0xF800);
   canvas.setTextDatum(MR_DATUM);
-  canvas.drawString(WiFi.status() == WL_CONNECTED ? "WiFi OK" : "AP Mode", 188, 190, 2);
+  canvas.setFont(&fonts::Font2);
+  canvas.drawString(WiFi.status() == WL_CONNECTED ? "WiFi OK" : "AP Mode", 188, 190);
 }
 
 // -------------------------------------------------------------
@@ -577,28 +607,35 @@ void drawWeatherScreen() {
 
   canvas.setTextDatum(TC_DATUM);
   canvas.setTextColor(0x56FF);
-  canvas.drawString("${config.weatherCity}", 120, 18, 4);
+  canvas.setFont(&fonts::Font4);
+  canvas.drawString("${config.weatherCity}", 120, 18);
 
   canvas.setTextDatum(MC_DATUM);
   canvas.setTextColor(TFT_WHITE);
-  canvas.drawString(String(state.temperature, 1) + " C", 120, 90, 7);
+  canvas.setFont(&fonts::Font7);
+  canvas.drawString(String(state.temperature, 1) + " C", 120, 90);
 
   canvas.setTextColor(0x7BEF);
-  canvas.drawString(state.weatherDesc, 120, 142, 2);
+  canvas.setFont(&fonts::Font2);
+  canvas.drawString(state.weatherDesc, 120, 142);
 
   canvas.fillRoundRect(20, 168, 95, 52, 8, 0x08A4);
   canvas.fillRoundRect(125, 168, 95, 52, 8, 0x08A4);
 
   canvas.setTextColor(0x07E0);
   canvas.setTextDatum(MC_DATUM);
-  canvas.drawString(String((int)state.humidity) + "%", 67, 186, 4);
+  canvas.setFont(&fonts::Font4);
+  canvas.drawString(String((int)state.humidity) + "%", 67, 186);
   canvas.setTextColor(0x7BEF);
-  canvas.drawString("HUMIDITY", 67, 208, 1);
+  canvas.setFont(&fonts::Font0);
+  canvas.drawString("HUMIDITY", 67, 208);
 
   canvas.setTextColor(0x07FF);
-  canvas.drawString("1014", 172, 186, 4);
+  canvas.setFont(&fonts::Font4);
+  canvas.drawString("1014", 172, 186);
   canvas.setTextColor(0x7BEF);
-  canvas.drawString("hPa", 172, 208, 1);
+  canvas.setFont(&fonts::Font0);
+  canvas.drawString("hPa", 172, 208);
 }
 
 // -------------------------------------------------------------
@@ -609,25 +646,31 @@ void drawHomeScreen() {
 
   canvas.setTextDatum(TC_DATUM);
   canvas.setTextColor(0x07FF);
-  canvas.drawString("HOME ASSISTANT", 120, 16, 2);
+  canvas.setFont(&fonts::Font2);
+  canvas.drawString("HOME ASSISTANT", 120, 16);
 
   // Card 1: Power
   canvas.fillRoundRect(16, 46, 208, 80, 10, 0x18C3);
   canvas.setTextColor(0xFBE0);
   canvas.setTextDatum(TL_DATUM);
-  canvas.drawString("MAIN POWER", 30, 58, 2);
+  canvas.setFont(&fonts::Font2);
+  canvas.drawString("MAIN POWER", 30, 58);
   canvas.setTextColor(TFT_WHITE);
-  canvas.drawString(String(state.haPower, 0) + " W", 30, 84, 6);
+  canvas.setFont(&fonts::Font6);
+  canvas.drawString(String(state.haPower, 0) + " W", 30, 84);
 
   // Card 2: Living Room
   canvas.fillRoundRect(16, 138, 208, 86, 10, 0x18C3);
   canvas.setTextColor(0x07E0);
   canvas.setTextDatum(TL_DATUM);
-  canvas.drawString("LIVING ROOM", 30, 150, 2);
+  canvas.setFont(&fonts::Font2);
+  canvas.drawString("LIVING ROOM", 30, 150);
   canvas.setTextColor(TFT_WHITE);
-  canvas.drawString("Light: " + String(state.haLight ? "ON" : "OFF"), 30, 174, 4);
+  canvas.setFont(&fonts::Font4);
+  canvas.drawString("Light: " + String(state.haLight ? "ON" : "OFF"), 30, 174);
   canvas.setTextColor(0x7BEF);
-  canvas.drawString("Auto mode active", 30, 204, 2);
+  canvas.setFont(&fonts::Font2);
+  canvas.drawString("Auto mode active", 30, 204);
 }
 
 // -------------------------------------------------------------
@@ -638,24 +681,28 @@ void drawPcStatsScreen() {
 
   canvas.setTextDatum(TC_DATUM);
   canvas.setTextColor(0x07E0);
-  canvas.drawString("SYSTEM STATS", 120, 14, 2);
+  canvas.setFont(&fonts::Font2);
+  canvas.drawString("SYSTEM STATS", 120, 14);
 
   canvas.setTextDatum(TL_DATUM);
   canvas.setTextColor(TFT_WHITE);
-  canvas.drawString("CPU LOAD: " + String(state.cpuUsage, 0) + "%", 20, 44, 2);
+  canvas.setFont(&fonts::Font2);
+  canvas.drawString("CPU LOAD: " + String(state.cpuUsage, 0) + "%", 20, 44);
   canvas.fillRoundRect(20, 66, 200, 14, 4, 0x2104);
   canvas.fillRoundRect(20, 66, (int)(200 * (state.cpuUsage / 100.0f)), 14, 4, 0x07E0);
 
-  canvas.drawString("RAM USAGE: " + String(state.ramUsage, 0) + "%", 20, 96, 2);
+  canvas.drawString("RAM USAGE: " + String(state.ramUsage, 0) + "%", 20, 96);
   canvas.fillRoundRect(20, 118, 200, 14, 4, 0x2104);
   canvas.fillRoundRect(20, 118, (int)(200 * (state.ramUsage / 100.0f)), 14, 4, 0x05BF);
 
   canvas.fillRoundRect(20, 150, 200, 70, 8, 0x18A2);
   canvas.setTextColor(0xFD20);
   canvas.setTextDatum(MC_DATUM);
-  canvas.drawString(String(state.cpuTemp, 1) + " C", 120, 178, 6);
+  canvas.setFont(&fonts::Font6);
+  canvas.drawString(String(state.cpuTemp, 1) + " C", 120, 178);
   canvas.setTextColor(0x7BEF);
-  canvas.drawString("CORE TEMPERATURE", 120, 206, 1);
+  canvas.setFont(&fonts::Font0);
+  canvas.drawString("CORE TEMPERATURE", 120, 206);
 }
 
 // -------------------------------------------------------------
@@ -700,11 +747,15 @@ void updateWeather() {
   int httpCode = http.GET();
   if (httpCode == HTTP_CODE_OK) {
     String payload = http.getString();
-    StaticJsonDocument<1024> doc;
+    JsonDocument doc;
     DeserializationError error = deserializeJson(doc, payload);
     if (!error) {
-      state.temperature = doc["main"]["temp"] | state.temperature;
-      state.humidity = doc["main"]["humidity"] | state.humidity;
+      if (doc["main"]["temp"].is<float>()) {
+        state.temperature = doc["main"]["temp"].as<float>();
+      }
+      if (doc["main"]["humidity"].is<float>()) {
+        state.humidity = doc["main"]["humidity"].as<float>();
+      }
       const char* desc = doc["weather"][0]["description"];
       if (desc) state.weatherDesc = String(desc);
       Serial.println("Weather updated successfully.");
@@ -718,8 +769,8 @@ void updateWeather() {
 // -------------------------------------------------------------
 void setupWebServer() {
   server.on("/api/display", HTTP_GET, []() {
-    StaticJsonDocument<256> doc;
-    doc["screen"] = currentScreen;
+    JsonDocument doc;
+    doc["screen"] = (int)currentScreen;
     doc["brightness"] = state.brightness;
     doc["temp"] = state.temperature;
     doc["humidity"] = state.humidity;
