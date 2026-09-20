@@ -1,0 +1,6 @@
+{
+  "name": "ESP32-C3 SuperMini ST7789 Firmware Studio",
+  "description": "Production firmware generator, 240x240 UI simulator, pinout guide, and Web Serial flasher for ESP32-C3 Super Mini with 1.3 inch ST7789 (GMT130 V1.0) 7-pin display.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
