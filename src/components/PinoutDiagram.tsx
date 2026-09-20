@@ -225,13 +225,12 @@ export default function PinoutDiagram({ config }: PinoutDiagramProps) {
 
           {/* Reserved Pins Warning */}
           <div className="mt-4 pt-3 border-t border-slate-800 space-y-1">
-            <p className="text-[11px] text-rose-400 font-semibold flex items-center gap-1.5">
-              <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-              Do NOT use GPIO 18 or GPIO 19!
+            <p className="text-[11px] text-emerald-400 font-semibold flex items-center gap-1.5">
+              <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+              Dual Backlight Engine + Hardware Reset Pulse Active
             </p>
-            <p className="text-[10px] text-slate-500 leading-normal">
-              GPIO 18 (USB D-) and GPIO 19 (USB D+) are used by the Super Mini's on-chip native USB CDC controller. 
-              Connecting display pins to GPIO 18/19 will disconnect your USB computer port!
+            <p className="text-[10px] text-slate-400 leading-normal">
+              Backlight on Pin 7 (GPIO 3) is driven via dedicated ESP32-C3 LEDC Channel 0 hardware PWM with 1.2 kHz smooth dimming. The startup sequence triggers an exact 20ms/120ms/120ms hardware reset pulse on GPIO 1 to reliably wake ST7789 silicon.
             </p>
           </div>
         </div>

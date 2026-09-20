@@ -218,7 +218,22 @@ void setup() {
   Serial.println("  100% BUTTONLESS - Wireless Web Portal & REST API     ");
   Serial.println("=======================================================");
 
-  // 1. Initialize Display & DMA Canvas
+  // 1. Hardware Reset Pulse (Exact sequence proven to wake ST7789 GMT130)
+  pinMode(${config.pinRes}, OUTPUT); // GPIO ${config.pinRes} = TFT_RST / RES
+  digitalWrite(${config.pinRes}, HIGH);
+  delay(20);
+  digitalWrite(${config.pinRes}, LOW);
+  delay(120);
+  digitalWrite(${config.pinRes}, HIGH);
+  delay(120);
+
+  // 2. Direct LEDC Hardware PWM for Pin 7 (BLK / Backlight - GPIO ${config.pinBlk})
+  // Guarantees backlight turns ON immediately regardless of library internal state
+  ledcSetup(0, 1200, 8); // Channel 0, 1.2 kHz, 8-bit resolution (0-255)
+  ledcAttachPin(${config.pinBlk}, 0);   // Attach GPIO ${config.pinBlk} to LEDC Channel 0
+  ledcWrite(0, state.brightness); // Drive PWM backlight immediately
+
+  // 3. Initialize Display & DMA Canvas
   tft.init();
   tft.setRotation(0);
   tft.setBrightness(state.brightness);
@@ -758,7 +773,8 @@ void setupWebServer() {
     if (server.hasArg("value")) {
       int val = server.arg("value").toInt();
       state.brightness = constrain(val, 5, 255);
-      tft.setBrightness(state.brightness);
+      ledcWrite(0, state.brightness);      // Direct hardware LEDC PWM control on GPIO ${config.pinBlk}
+      tft.setBrightness(state.brightness); // LovyanGFX backlight sync
       server.send(200, "text/plain", "OK");
     } else {
       server.send(400, "text/plain", "Missing value");
