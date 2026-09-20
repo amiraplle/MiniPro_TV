@@ -817,6 +817,8 @@ jobs:
   build-and-merge:
     name: Compile & Generate Merged 0x0 Binary
     runs-on: ubuntu-latest
+    env:
+      ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: "true"
 
     steps:
       - name: Checkout Repository
@@ -826,12 +828,15 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          cache: 'pip'
 
       - name: Install PlatformIO and esptool
         run: |
           python -m pip install --upgrade pip
-          pip install platformio esptool
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          else
+            pip install platformio esptool
+          fi
 
       - name: Cache PlatformIO Core & Packages
         uses: actions/cache@v4

@@ -92,6 +92,7 @@ export default function FirmwareGenerator({ config, onConfigChange }: FirmwareGe
 
       // 3. PlatformIO Project Structure
       zip.file('platformio.ini', platformIoCode);
+      zip.file('requirements.txt', 'platformio>=6.1.16\nesptool>=4.8.1\n');
       const srcFolder = zip.folder('src');
       srcFolder?.file('main.cpp', inoCode);
       const includeFolder = zip.folder('include');
