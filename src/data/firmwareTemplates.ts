@@ -62,8 +62,9 @@ public:
       cfg.spi_mode   = 0;             // SPI Mode 0 (CPOL=0, CPHA=0)
       cfg.freq_write = ${config.spiFrequencyMhz * 1000000}; // ${config.spiFrequencyMhz}MHz stable write clock
       cfg.freq_read  = 16000000;      // 16MHz read clock
-      cfg.spi_3wire  = true;          // GMT130 is write-only / 3-wire (no MISO)
-      cfg.use_dma    = true;          // Enable hardware DMA channel (essential for 60fps anti-tearing)
+      cfg.spi_3wire   = true;          // GMT130 is write-only / 3-wire (no MISO)
+      cfg.use_lock    = true;
+      cfg.dma_channel = SPI_DMA_CH_AUTO; // Enable hardware DMA channel (essential for 60fps anti-tearing)
       
       cfg.pin_sclk = ${config.pinScl}; // GMT130 SCL / CLK
       cfg.pin_mosi = ${config.pinSda}; // GMT130 SDA / DIN
